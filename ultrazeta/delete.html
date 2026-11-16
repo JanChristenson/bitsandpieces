@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delete your UltraZeta account</title>
+<meta name="description" content="Delete your UltraZeta community account and the data linked to it.">
+<meta name="robots" content="noindex">
+<style>
+  :root {
+    --bg: #0f1726;
+    --card: #182235;
+    --text: #e8edf6;
+    --muted: #9aa7bd;
+    --line: #2a3750;
+    --accent: #22b8e0;
+    --danger: #e0475c;
+    --danger-text: #fff;
+    --ok: #3ccf8e;
+    --field: #0f1726;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f2f5fa;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #5b6880;
+      --line: #d7deea;
+      --accent: #0d8fb3;
+      --danger: #c9283f;
+      --ok: #178a57;
+      --field: #f7f9fc;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 34rem; margin: 0 auto; padding: 2rem 1rem 3rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+  .sub { color: var(--muted); margin: 0 0 1.5rem; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.25rem;
+  }
+  h2 { font-size: 1.1rem; margin: 0 0 .75rem; }
+  ul { margin: .25rem 0 1rem; padding-left: 1.25rem; }
+  li { margin: .2rem 0; }
+  label { display: block; font-weight: 600; margin: 0 0 .35rem; }
+  input {
+    width: 100%;
+    font: inherit;
+    color: var(--text);
+    background: var(--field);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: .7rem .8rem;
+  }
+  input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #code { letter-spacing: .3em; font-size: 1.25rem; }
+  .row { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1rem; }
+  button {
+    font: inherit;
+    font-weight: 700;
+    border: 0;
+    border-radius: 10px;
+    padding: .7rem 1.1rem;
+    cursor: pointer;
+    background: var(--accent);
+    color: #fff;
+  }
+  button.secondary { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  button.danger { background: var(--danger); color: var(--danger-text); }
+  button:disabled { opacity: .55; cursor: default; }
+  .msg { margin: .75rem 0 0; min-height: 1.5em; }
+  .msg.error { color: var(--danger); }
+  .done { color: var(--ok); font-weight: 700; }
+  .note { color: var(--muted); font-size: .9rem; margin-top: 1.5rem; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Delete your UltraZeta account</h1>
+  <p class="sub">You can also do this in the game: Levels → Community → Account → Delete account.</p>
+
+  <!-- Step 1: email -->
+  <section class="card" id="step-email">
+    <h2>1. Your email address</h2>
+    <p>Enter the address you signed in with. We'll email you a 6-digit code to prove it's yours.</p>
+    <form id="form-email" novalidate>
+      <label for="email">Email address</label>
+      <input id="email" type="email" autocomplete="email" inputmode="email" required>
+      <div class="row"><button type="submit" id="btn-send">Send code</button></div>
+      <p class="msg" id="msg-email" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <!-- Step 2: code + confirm -->
+  <section class="card" id="step-code" hidden>
+    <h2>2. Confirm the deletion</h2>
+    <p>We sent a code to <strong id="sent-to"></strong>. It is valid for 10 minutes. Check your spam folder if it doesn't arrive.</p>
+    <form id="form-code" novalidate>
+      <label for="code">6-digit code</label>
+      <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required>
+
+      <p style="margin-top:1rem"><strong>This is deleted immediately and can't be undone:</strong></p>
+      <ul>
+        <li>your account and display name</li>
+        <li>the link between your email and the account</li>
+        <li>all sign-ins on every device</li>
+      </ul>
+      <p><strong>Levels and packs you published stay</strong>, shown as made by "a deleted player" with nothing linking them to you. To remove them too, take them down in the game first (Account → Take down).</p>
+
+      <div class="row">
+        <button type="submit" class="danger" id="btn-delete">Delete my account</button>
+        <button type="button" class="secondary" id="btn-back">Use another address</button>
+      </div>
+      <p class="msg" id="msg-code" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <!-- Step 3: done -->
+  <section class="card" id="step-done" hidden>
+    <h2 class="done">Your account is deleted.</h2>
+    <p>If the game is still installed, it will ask you to sign in again the next time you open the Community tab. Signing in with the same address later creates a new, empty account.</p>
+  </section>
+
+  <p class="note">Problems? Email <a id="contact" href="#"></a>. See also the <a href="privacy.html">privacy policy</a>.</p>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const PRODUCTION_API = "https://uzf-aydff0bqe2dugve9.northeurope-01.azurewebsites.net/api";
+  const CONTACT_EMAIL = "bitsandpieces.indie@gmail.com";
+
+  // ?api=… is accepted only for a local server, so a link can't send codes anywhere else.
+  const API = (() => {
+    const override = new URLSearchParams(location.search).get("api");
+    if (override && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/api$/.test(override)) return override;
+    return PRODUCTION_API;
+  })();
+
+  const $ = (id) => document.getElementById(id);
+  const contact = $("contact");
+  contact.textContent = CONTACT_EMAIL;
+  contact.href = "mailto:" + CONTACT_EMAIL;
+  if (CONTACT_EMAIL.startsWith("<")) contact.parentElement.hidden = true;
+
+  let email = "";
+
+  async function call(method, path, body, token) {
+    const headers = {};
+    if (body !== undefined) headers["Content-Type"] = "application/json";
+    if (token) headers["Authorization"] = "Bearer " + token;
+    let response;
+    try {
+      response = await fetch(API + "/" + path, {
+        method,
+        headers,
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+    } catch {
+      throw new Error("Couldn't reach the server. Check your connection and try again.");
+    }
+    let data = null;
+    try { data = await response.json(); } catch { /* empty body */ }
+    if (!response.ok) {
+      throw new Error((data && data.message) || "Something went wrong (" + response.status + "). Please try again.");
+    }
+    return data;
+  }
+
+  function show(step) {
+    for (const id of ["step-email", "step-code", "step-done"]) $(id).hidden = id !== step;
+  }
+
+  function say(el, text, isError) {
+    el.textContent = text;
+    el.classList.toggle("error", !!isError);
+  }
+
+  $("form-email").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const value = $("email").value.trim();
+    const msg = $("msg-email");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      say(msg, "Enter a valid email address.", true);
+      return;
+    }
+    $("btn-send").disabled = true;
+    say(msg, "Sending…");
+    try {
+      await call("POST", "auth/start", { email: value });
+      email = value;
+      $("sent-to").textContent = value;
+      $("code").value = "";
+      say($("msg-code"), "");
+      say(msg, "");
+      show("step-code");
+      $("code").focus();
+    } catch (error) {
+      say(msg, error.message, true);
+    } finally {
+      $("btn-send").disabled = false;
+    }
+  });
+
+  $("code").addEventListener("input", () => {
+    $("code").value = $("code").value.replace(/\D/g, "").slice(0, 6);
+  });
+
+  $("form-code").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const code = $("code").value;
+    const msg = $("msg-code");
+    if (!/^\d{6}$/.test(code)) {
+      say(msg, "Enter the 6-digit code from the email.", true);
+      return;
+    }
+    $("btn-delete").disabled = true;
+    $("btn-back").disabled = true;
+    say(msg, "Deleting…");
+    try {
+      // Signing in proves the address is yours (it creates an empty account if there was none;
+      // that one is deleted right away too).
+      const session = await call("POST", "auth/verify", { email, code });
+      await call("DELETE", "me", undefined, session.accessToken);
+      show("step-done");
+    } catch (error) {
+      say(msg, error.message, true);
+    } finally {
+      $("btn-delete").disabled = false;
+      $("btn-back").disabled = false;
+    }
+  });
+
+  $("btn-back").addEventListener("click", () => {
+    say($("msg-email"), "");
+    show("step-email");
+    $("email").focus();
+  });
+})();
+</script>
+</body>
+</html>
